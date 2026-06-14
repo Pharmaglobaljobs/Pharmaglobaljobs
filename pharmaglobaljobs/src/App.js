@@ -1,0 +1,733 @@
+import { useState, useCallback } from "react";
+
+// ─── STYLES ──────────────────────────────────────────────────────────────────
+const STYLE = `
+@import url('https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@400;500;600;700&family=Inter:wght@300;400;500;600&family=JetBrains+Mono:wght@400;500&display=swap');
+*,*::before,*::after{box-sizing:border-box;margin:0;padding:0}
+:root{
+  --navy:#0A0F1E;--navy-card:#1A2235;--navy-border:#243044;
+  --teal:#00D4AA;--teal-glow:rgba(0,212,170,0.15);
+  --amber:#F5A623;--amber-dim:rgba(245,166,35,0.15);
+  --rose:#FF6B8A;--rose-dim:rgba(255,107,138,0.15);
+  --sky:#60A5FA;--sky-dim:rgba(96,165,250,0.15);
+  --purple:#A78BFA;--purple-dim:rgba(167,139,250,0.15);
+  --green:#34D399;--green-dim:rgba(52,211,153,0.15);
+  --white:#F0F4FC;--text:#E2E8F0;--text-muted:#94A3B8;
+  --font-display:'Space Grotesk',sans-serif;
+  --font-body:'Inter',sans-serif;
+  --font-mono:'JetBrains Mono',monospace;
+  --radius:12px;--radius-sm:8px;--radius-lg:18px;
+  --shadow:0 4px 24px rgba(0,0,0,0.4);
+  --transition:0.22s cubic-bezier(0.4,0,0.2,1);
+}
+body{background:var(--navy);color:var(--text);font-family:var(--font-body);min-height:100vh;line-height:1.6;-webkit-font-smoothing:antialiased}
+
+/* HEADER */
+.hdr{position:sticky;top:0;z-index:100;background:rgba(10,15,30,0.9);backdrop-filter:blur(20px);border-bottom:1px solid var(--navy-border);padding:0 20px}
+.hdr-in{max-width:1440px;margin:0 auto;display:flex;align-items:center;justify-content:space-between;height:60px;gap:12px}
+.logo{display:flex;align-items:center;gap:9px;text-decoration:none;cursor:pointer}
+.logo-icon{width:34px;height:34px;background:linear-gradient(135deg,var(--teal),#0099FF);border-radius:8px;display:flex;align-items:center;justify-content:center;font-size:17px;flex-shrink:0}
+.logo-txt{font-family:var(--font-display);font-weight:700;font-size:17px;color:var(--white)}
+.logo-txt span{color:var(--teal)}
+.nav{display:flex;align-items:center;gap:2px;overflow-x:auto}
+.nb{background:none;border:none;color:var(--text-muted);font-family:var(--font-body);font-size:13px;font-weight:500;padding:6px 12px;border-radius:var(--radius-sm);cursor:pointer;transition:var(--transition);white-space:nowrap}
+.nb:hover{color:var(--white);background:var(--navy-card)}
+.nb.act{color:var(--teal);background:var(--navy-card)}
+.btn{font-family:var(--font-body);font-size:13px;font-weight:600;padding:7px 16px;border-radius:var(--radius-sm);border:none;cursor:pointer;transition:var(--transition);display:inline-flex;align-items:center;gap:5px;white-space:nowrap}
+.btn-ghost{background:var(--navy-card);color:var(--text);border:1px solid var(--navy-border)}
+.btn-ghost:hover{border-color:var(--teal);color:var(--teal)}
+.btn-primary{background:var(--teal);color:#0A0F1E;font-weight:700}
+.btn-primary:hover{background:#00F0C0;transform:translateY(-1px)}
+.btn-danger{background:var(--rose-dim);color:var(--rose);border:1px solid rgba(255,107,138,0.3)}
+.btn-danger:hover{background:var(--rose);color:#fff}
+
+/* HERO */
+.hero{background:linear-gradient(165deg,#0A0F1E,#0D1A2E,#0A1520);padding:52px 20px 40px;border-bottom:1px solid var(--navy-border);position:relative;overflow:hidden}
+.hero::before{content:'';position:absolute;top:-80px;right:-80px;width:500px;height:500px;background:radial-gradient(circle,rgba(0,212,170,0.07) 0%,transparent 70%);pointer-events:none}
+.hero-in{max-width:1440px;margin:0 auto;position:relative;z-index:1}
+.eyebrow{display:inline-flex;align-items:center;gap:7px;background:var(--teal-glow);border:1px solid rgba(0,212,170,0.3);border-radius:100px;padding:4px 13px;font-size:11px;font-weight:600;color:var(--teal);letter-spacing:.05em;text-transform:uppercase;margin-bottom:18px}
+.pdot{width:6px;height:6px;background:var(--teal);border-radius:50%;animation:pulse 2s ease-in-out infinite}
+@keyframes pulse{0%,100%{opacity:1;transform:scale(1)}50%{opacity:.4;transform:scale(.7)}}
+.hero-title{font-family:var(--font-display);font-size:clamp(26px,4vw,48px);font-weight:700;line-height:1.1;letter-spacing:-1px;color:var(--white);margin-bottom:14px}
+.hero-title .ac{color:var(--teal)}
+.hero-sub{font-size:15px;color:var(--text-muted);max-width:520px;margin-bottom:28px;line-height:1.7}
+.stats{display:flex;flex-wrap:wrap;gap:20px;margin-bottom:28px}
+.stat-v{font-family:var(--font-display);font-size:26px;font-weight:700;color:var(--white)}
+.stat-v .u{font-size:14px;color:var(--teal)}
+.stat-l{font-size:11px;color:var(--text-muted);font-weight:500;text-transform:uppercase;letter-spacing:.05em}
+.sdiv{width:1px;background:var(--navy-border);align-self:stretch}
+.srch{background:var(--navy-card);border:1px solid var(--navy-border);border-radius:var(--radius-lg);padding:6px;display:flex;gap:6px;align-items:center;max-width:780px;transition:var(--transition)}
+.srch:focus-within{border-color:var(--teal);box-shadow:0 0 0 3px var(--teal-glow)}
+.srch-inp{flex:1;background:none;border:none;outline:none;font-family:var(--font-body);font-size:14px;color:var(--white);padding:4px 8px}
+.srch-inp::placeholder{color:var(--text-muted)}
+.sdivv{width:1px;height:22px;background:var(--navy-border);flex-shrink:0}
+.csel{background:none;border:none;outline:none;font-family:var(--font-body);font-size:13px;color:var(--text-muted);cursor:pointer;padding:0 10px;min-width:110px;appearance:none}
+.csel option{background:var(--navy-card)}
+
+/* LAYOUT */
+.layout{max-width:1440px;margin:0 auto;padding:28px 20px;display:grid;grid-template-columns:260px 1fr;gap:24px;align-items:start}
+@media(max-width:880px){.layout{grid-template-columns:1fr}.sidebar{display:none}}
+
+/* SIDEBAR */
+.sidebar{position:sticky;top:72px;display:flex;flex-direction:column;gap:14px}
+.fc{background:var(--navy-card);border:1px solid var(--navy-border);border-radius:var(--radius);padding:16px}
+.ft{font-family:var(--font-display);font-size:12px;font-weight:600;color:var(--text-muted);text-transform:uppercase;letter-spacing:.08em;margin-bottom:12px;display:flex;align-items:center;justify-content:space-between}
+.freset{font-size:11px;color:var(--teal);background:none;border:none;cursor:pointer;font-weight:600;font-family:var(--font-body)}
+.chips{display:flex;flex-wrap:wrap;gap:6px}
+.chip{font-size:12px;font-weight:500;font-family:var(--font-body);padding:5px 11px;border-radius:100px;border:1px solid var(--navy-border);background:var(--navy);color:var(--text-muted);cursor:pointer;transition:var(--transition)}
+.chip:hover{border-color:var(--teal);color:var(--teal)}
+.chip.act{background:var(--teal-glow);border-color:var(--teal);color:var(--teal)}
+.trow{display:flex;align-items:center;justify-content:space-between;padding:8px 0;border-bottom:1px solid var(--navy-border)}
+.trow:last-child{border-bottom:none}
+.tlbl{font-size:13px;color:var(--text);font-weight:500}
+.tog{width:36px;height:20px;background:var(--navy-border);border-radius:100px;position:relative;cursor:pointer;transition:var(--transition);border:none;flex-shrink:0}
+.tog.on{background:var(--teal)}
+.tog::after{content:'';position:absolute;top:2px;left:2px;width:16px;height:16px;background:white;border-radius:50%;transition:var(--transition)}
+.tog.on::after{transform:translateX(16px)}
+
+/* JOB CARDS */
+.jobs-grid{display:flex;flex-direction:column;gap:14px}
+.jcard{background:var(--navy-card);border:1px solid var(--navy-border);border-radius:var(--radius-lg);padding:20px;transition:var(--transition);cursor:pointer;position:relative;overflow:hidden}
+.jcard::before{content:'';position:absolute;top:0;left:0;width:3px;height:100%;background:transparent;transition:var(--transition)}
+.jcard:hover{border-color:rgba(0,212,170,0.35);transform:translateY(-2px);box-shadow:0 8px 32px rgba(0,0,0,.3)}
+.jcard:hover::before{background:var(--teal)}
+.jcard-top{display:flex;align-items:flex-start;justify-content:space-between;gap:10px;margin-bottom:12px}
+.clogo{width:44px;height:44px;border-radius:9px;background:linear-gradient(135deg,var(--navy),var(--navy-border));display:flex;align-items:center;justify-content:center;font-size:20px;border:1px solid var(--navy-border);flex-shrink:0}
+.jtitle{font-family:var(--font-display);font-size:15px;font-weight:600;color:var(--white);margin-bottom:3px;line-height:1.3}
+.cname{font-size:12px;color:var(--teal);font-weight:500}
+.jmeta{display:flex;flex-wrap:wrap;gap:6px;margin-bottom:12px}
+.mpill{display:inline-flex;align-items:center;gap:4px;font-size:11px;font-weight:500;padding:3px 9px;border-radius:100px;background:var(--navy);border:1px solid var(--navy-border);color:var(--text-muted)}
+.vbadge{display:inline-flex;align-items:center;gap:5px;font-size:11px;font-weight:700;padding:3px 10px;border-radius:100px;letter-spacing:.04em;text-transform:uppercase}
+.vyes{background:var(--teal-glow);border:1px solid rgba(0,212,170,.5);color:var(--teal);animation:vglow 3s ease-in-out infinite}
+@keyframes vglow{0%,100%{box-shadow:0 0 0 0 rgba(0,212,170,0)}50%{box-shadow:0 0 12px 2px rgba(0,212,170,.2)}}
+.vno{background:var(--rose-dim);border:1px solid rgba(255,107,138,.3);color:var(--rose)}
+.jsal{display:flex;align-items:baseline;gap:7px;margin-bottom:10px}
+.sal-m{font-family:var(--font-mono);font-size:16px;font-weight:500;color:var(--white)}
+.sal-i{font-family:var(--font-mono);font-size:11px;color:var(--text-muted)}
+.jdesc{font-size:12px;color:var(--text-muted);line-height:1.65;margin-bottom:12px;display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical;overflow:hidden}
+.jfoot{display:flex;align-items:center;justify-content:space-between;gap:10px;flex-wrap:wrap}
+.sbar-w{width:72px;height:4px;background:var(--navy);border-radius:100px;overflow:hidden}
+.sbar{height:100%;border-radius:100px;transition:width .8s ease}
+.sbar.high{background:linear-gradient(90deg,var(--teal),#00F0C0)}
+.sbar.medium{background:linear-gradient(90deg,var(--amber),#FFCD57)}
+.sbar.low{background:linear-gradient(90deg,var(--rose),#FF9EAF)}
+.stxt.high{color:var(--teal)}.stxt.medium{color:var(--amber)}.stxt.low{color:var(--rose)}
+.dpill{font-size:11px;font-weight:500;font-family:var(--font-mono);color:var(--text-muted);background:var(--navy);border:1px solid var(--navy-border);padding:3px 8px;border-radius:100px}
+.dpill.soon{color:var(--amber);border-color:rgba(245,166,35,.3);background:var(--amber-dim)}
+.svbtn{width:32px;height:32px;border-radius:var(--radius-sm);border:1px solid var(--navy-border);background:var(--navy);color:var(--text-muted);font-size:15px;cursor:pointer;transition:var(--transition);display:flex;align-items:center;justify-content:center}
+.svbtn:hover,.svbtn.saved{border-color:var(--amber);color:var(--amber);background:var(--amber-dim)}
+
+/* TOOLBAR */
+.toolbar{display:flex;align-items:center;justify-content:space-between;margin-bottom:16px;gap:10px;flex-wrap:wrap}
+.rmeta{font-size:13px;color:var(--text-muted)}
+.rmeta strong{color:var(--white);font-weight:600}
+.sortsel{background:var(--navy-card);border:1px solid var(--navy-border);color:var(--text);font-family:var(--font-body);font-size:13px;padding:6px 10px;border-radius:var(--radius-sm);outline:none;cursor:pointer}
+.sortsel option{background:var(--navy-card)}
+.tab-bar{display:flex;gap:3px;background:var(--navy-card);border:1px solid var(--navy-border);border-radius:var(--radius);padding:3px;margin-bottom:16px;overflow-x:auto}
+.tab{background:none;border:none;font-family:var(--font-body);font-size:12px;font-weight:500;color:var(--text-muted);padding:6px 13px;border-radius:var(--radius-sm);cursor:pointer;transition:var(--transition);white-space:nowrap;display:flex;align-items:center;gap:5px}
+.tab:hover{color:var(--white)}
+.tab.act{background:var(--navy);color:var(--teal);box-shadow:var(--shadow)}
+.tcnt{background:var(--teal-glow);color:var(--teal);font-size:10px;font-weight:700;padding:1px 6px;border-radius:100px}
+
+/* COUNTRY GRID */
+.cg{display:grid;grid-template-columns:repeat(auto-fill,minmax(140px,1fr));gap:10px;margin-bottom:24px}
+.ccard{background:var(--navy-card);border:1px solid var(--navy-border);border-radius:var(--radius);padding:14px;text-align:center;cursor:pointer;transition:var(--transition)}
+.ccard:hover,.ccard.act{border-color:var(--teal);background:var(--teal-glow)}
+.cflag{font-size:26px;margin-bottom:5px}
+.cname-t{font-size:12px;font-weight:600;color:var(--white);margin-bottom:2px}
+.ccnt{font-size:10px;color:var(--teal);font-family:var(--font-mono)}
+.sh{display:flex;align-items:center;justify-content:space-between;margin-bottom:16px;flex-wrap:wrap;gap:8px}
+.st{font-family:var(--font-display);font-size:16px;font-weight:600;color:var(--white)}
+.badge-new{font-size:9px;font-weight:700;padding:2px 6px;border-radius:100px;background:var(--rose-dim);color:var(--rose);border:1px solid rgba(255,107,138,.3);text-transform:uppercase;letter-spacing:.05em;vertical-align:middle;margin-left:5px}
+.notif{background:linear-gradient(90deg,rgba(0,212,170,.08),rgba(0,153,255,.08));border:1px solid rgba(0,212,170,.2);border-radius:var(--radius);padding:11px 16px;display:flex;align-items:center;justify-content:space-between;gap:10px;margin-bottom:16px;flex-wrap:wrap}
+.notif-t{font-size:13px;color:var(--text)}
+.ndism{background:none;border:none;color:var(--text-muted);font-size:16px;cursor:pointer}
+
+/* MODAL OVERLAY */
+.overlay{position:fixed;inset:0;background:rgba(5,10,20,.8);z-index:200;display:flex;align-items:flex-start;justify-content:flex-end;backdrop-filter:blur(10px);animation:fadein .2s ease}
+@keyframes fadein{from{opacity:0}to{opacity:1}}
+.panel{width:min(660px,100vw);height:100vh;background:var(--navy-card);border-left:1px solid var(--navy-border);overflow-y:auto;animation:slidein .3s cubic-bezier(.4,0,.2,1);display:flex;flex-direction:column}
+@keyframes slidein{from{transform:translateX(100%)}to{transform:translateX(0)}}
+.phdr{padding:20px;border-bottom:1px solid var(--navy-border);position:sticky;top:0;background:var(--navy-card);z-index:10;display:flex;justify-content:space-between;align-items:flex-start;gap:10px}
+.pbody{padding:22px;flex:1}
+.psec{margin-bottom:22px}
+.psec-t{font-family:var(--font-display);font-size:11px;font-weight:600;color:var(--text-muted);text-transform:uppercase;letter-spacing:.08em;margin-bottom:10px;padding-bottom:7px;border-bottom:1px solid var(--navy-border)}
+.pgrid{display:grid;grid-template-columns:1fr 1fr;gap:10px}
+.pi{display:flex;flex-direction:column;gap:2px}
+.pil{font-size:10px;color:var(--text-muted);font-weight:500;text-transform:uppercase;letter-spacing:.05em}
+.piv{font-size:13px;color:var(--white);font-weight:500}
+.aib{background:linear-gradient(135deg,rgba(0,212,170,.07),rgba(0,153,255,.07));border:1px solid rgba(0,212,170,.2);border-radius:var(--radius);padding:14px}
+.aibt{display:flex;align-items:center;gap:7px;font-size:12px;font-weight:600;color:var(--teal);margin-bottom:8px}
+.aib p{font-size:12px;color:var(--text-muted);line-height:1.7}
+.pact{padding:18px 20px;border-top:1px solid var(--navy-border);display:flex;gap:8px;position:sticky;bottom:0;background:var(--navy-card)}
+.applyb{flex:1;background:var(--teal);color:#0A0F1E;font-weight:700;font-size:14px;padding:11px 18px;border-radius:var(--radius-sm);border:none;cursor:pointer;transition:var(--transition);font-family:var(--font-body);display:flex;align-items:center;justify-content:center;gap:5px;text-decoration:none}
+.applyb:hover{background:#00F0C0;transform:translateY(-1px)}
+.closeb{width:32px;height:32px;border-radius:var(--radius-sm);border:1px solid var(--navy-border);background:var(--navy);color:var(--text-muted);font-size:16px;cursor:pointer;transition:var(--transition);display:flex;align-items:center;justify-content:center;flex-shrink:0}
+.closeb:hover{color:var(--white);border-color:var(--teal)}
+
+/* APPLICATION MODAL (full-screen center) */
+.modal-overlay{position:fixed;inset:0;background:rgba(5,10,20,.85);z-index:300;display:flex;align-items:center;justify-content:center;backdrop-filter:blur(12px);animation:fadein .2s ease;padding:16px}
+.modal{background:var(--navy-card);border:1px solid var(--navy-border);border-radius:var(--radius-lg);width:min(680px,100%);max-height:90vh;overflow-y:auto;animation:scaleup .25s cubic-bezier(.4,0,.2,1)}
+@keyframes scaleup{from{transform:scale(.96);opacity:0}to{transform:scale(1);opacity:1}}
+.mhdr{padding:22px 22px 16px;border-bottom:1px solid var(--navy-border);display:flex;align-items:flex-start;justify-content:space-between;gap:12px}
+.mbody{padding:22px}
+.mfoot{padding:16px 22px;border-top:1px solid var(--navy-border);display:flex;gap:10px;justify-content:flex-end}
+
+/* FORM ELEMENTS */
+.finput{width:100%;background:var(--navy);border:1px solid var(--navy-border);border-radius:var(--radius-sm);color:var(--white);font-family:var(--font-body);font-size:13px;padding:10px 13px;outline:none;transition:var(--transition);margin-bottom:12px}
+.finput:focus{border-color:var(--teal);box-shadow:0 0 0 3px var(--teal-glow)}
+.finput::placeholder{color:var(--text-muted)}
+textarea.finput{resize:vertical;min-height:90px}
+.flbl{font-size:11px;font-weight:600;color:var(--text-muted);text-transform:uppercase;letter-spacing:.06em;margin-bottom:5px;display:block}
+.frow{display:grid;grid-template-columns:1fr 1fr;gap:12px}
+@media(max-width:500px){.frow{grid-template-columns:1fr}}
+.fgroup{margin-bottom:4px}
+
+/* STEPS */
+.steps{display:flex;align-items:center;gap:6px;margin-bottom:24px;overflow-x:auto;padding-bottom:4px}
+.step{display:flex;align-items:center;gap:5px;flex-shrink:0}
+.step-num{width:26px;height:26px;border-radius:50%;display:flex;align-items:center;justify-content:center;font-size:11px;font-weight:700;font-family:var(--font-mono);background:var(--navy);border:1px solid var(--navy-border);color:var(--text-muted);transition:var(--transition)}
+.step-num.done{background:var(--teal);border-color:var(--teal);color:#0A0F1E}
+.step-num.curr{background:var(--teal-glow);border-color:var(--teal);color:var(--teal)}
+.step-lbl{font-size:11px;color:var(--text-muted);font-weight:500}
+.step-lbl.curr{color:var(--teal)}
+.step-conn{width:20px;height:1px;background:var(--navy-border);flex-shrink:0}
+.step-conn.done{background:var(--teal)}
+
+/* AI PANEL */
+.aip{background:linear-gradient(135deg,#0D1A2E,#0A1A14);border:1px solid rgba(0,212,170,.2);border-radius:var(--radius-lg);padding:22px;margin-bottom:18px}
+.aipt{display:flex;align-items:center;gap:9px;font-family:var(--font-display);font-size:14px;font-weight:600;color:var(--white);margin-bottom:3px}
+.aitag{font-size:9px;font-weight:700;padding:2px 7px;border-radius:100px;background:var(--teal-glow);color:var(--teal);border:1px solid rgba(0,212,170,.3);letter-spacing:.05em}
+.aip p{font-size:12px;color:var(--text-muted);margin-bottom:12px;line-height:1.65}
+.ai-inp-w{display:flex;gap:7px}
+.ai-inp{flex:1;background:var(--navy);border:1px solid var(--navy-border);border-radius:var(--radius-sm);color:var(--white);font-family:var(--font-body);font-size:13px;padding:9px 13px;outline:none;transition:var(--transition)}
+.ai-inp:focus{border-color:var(--teal)}
+.ai-inp::placeholder{color:var(--text-muted)}
+.ai-resp{margin-top:12px;background:rgba(0,212,170,.04);border:1px solid rgba(0,212,170,.15);border-radius:var(--radius-sm);padding:13px;font-size:12px;color:var(--text);line-height:1.75;white-space:pre-wrap}
+.ai-load{display:flex;align-items:center;gap:7px;font-size:12px;color:var(--teal);padding:10px 0}
+.spin{width:16px;height:16px;border:2px solid var(--teal-glow);border-top-color:var(--teal);border-radius:50%;animation:spin .8s linear infinite}
+@keyframes spin{to{transform:rotate(360deg)}}
+
+/* RESUME */
+.resume-wrap{background:white;border-radius:var(--radius);padding:36px;color:#111;font-family:'Georgia',serif;line-height:1.6;font-size:13px;box-shadow:0 8px 40px rgba(0,0,0,.4)}
+.r-name{font-size:24px;font-weight:700;color:#0A2540;text-align:center;letter-spacing:-.3px;margin-bottom:4px}
+.r-contact{text-align:center;font-size:12px;color:#555;margin-bottom:16px;line-height:1.8}
+.r-divider{border:none;border-top:2px solid #0A2540;margin:12px 0}
+.r-section-title{font-size:13px;font-weight:700;color:#0A2540;text-transform:uppercase;letter-spacing:.1em;margin-bottom:10px;margin-top:16px}
+.r-item{margin-bottom:12px}
+.r-item-header{display:flex;justify-content:space-between;align-items:flex-start}
+.r-item-title{font-weight:700;color:#0A2540;font-size:13px}
+.r-item-date{font-size:11px;color:#666;white-space:nowrap;margin-left:12px}
+.r-item-sub{font-style:italic;color:#444;font-size:12px;margin-bottom:4px}
+.r-bullet{margin-left:16px;font-size:12px;color:#333;margin-bottom:2px}
+.r-skills-grid{display:grid;grid-template-columns:1fr 1fr;gap:6px}
+.r-skill-item{font-size:12px;color:#333}
+.resume-editor{display:grid;grid-template-columns:1fr 1fr;gap:24px;align-items:start}
+@media(max-width:800px){.resume-editor{grid-template-columns:1fr}}
+
+/* INTERVIEW PREP */
+.qcard{background:var(--navy-card);border:1px solid var(--navy-border);border-radius:var(--radius);padding:18px;margin-bottom:12px;transition:var(--transition)}
+.qcard:hover{border-color:rgba(0,212,170,.25)}
+.qnum{font-family:var(--font-mono);font-size:10px;color:var(--text-muted);margin-bottom:6px;font-weight:500}
+.qtxt{font-size:14px;font-weight:600;color:var(--white);margin-bottom:10px;line-height:1.4}
+.qans{font-size:13px;color:var(--text-muted);line-height:1.7;border-left:2px solid var(--teal);padding-left:12px}
+.qcategory{display:inline-flex;align-items:center;gap:4px;font-size:10px;font-weight:600;padding:2px 9px;border-radius:100px;text-transform:uppercase;letter-spacing:.05em;margin-bottom:10px}
+.qc-pv{background:var(--teal-glow);border:1px solid rgba(0,212,170,.3);color:var(--teal)}
+.qc-ra{background:var(--sky-dim);border:1px solid rgba(96,165,250,.3);color:var(--sky)}
+.qc-gen{background:var(--purple-dim);border:1px solid rgba(167,139,250,.3);color:var(--purple)}
+.qc-sci{background:var(--amber-dim);border:1px solid rgba(245,166,35,.3);color:var(--amber)}
+.tip-box{background:var(--green-dim);border:1px solid rgba(52,211,153,.2);border-radius:var(--radius-sm);padding:12px 14px;margin-bottom:10px;font-size:12px;color:var(--green);line-height:1.65}
+
+/* TRACKER CARDS */
+.tgrid{display:grid;grid-template-columns:repeat(4,1fr);gap:10px;margin-bottom:20px}
+@media(max-width:640px){.tgrid{grid-template-columns:repeat(2,1fr)}}
+.tcard{background:var(--navy-card);border:1px solid var(--navy-border);border-radius:var(--radius);padding:14px}
+.tcval{font-family:var(--font-display);font-size:26px;font-weight:700;color:var(--white);line-height:1;margin-bottom:3px}
+.tclbl{font-size:11px;color:var(--text-muted);font-weight:500}
+
+/* DEPLOY GUIDE */
+.deploy-step{background:var(--navy-card);border:1px solid var(--navy-border);border-radius:var(--radius);padding:18px;margin-bottom:12px}
+.ds-num{width:28px;height:28px;border-radius:50%;background:var(--teal-glow);border:1px solid rgba(0,212,170,.4);display:flex;align-items:center;justify-content:center;font-family:var(--font-mono);font-size:11px;font-weight:700;color:var(--teal);flex-shrink:0}
+.ds-title{font-family:var(--font-display);font-size:14px;font-weight:600;color:var(--white);margin-bottom:5px}
+.ds-desc{font-size:12px;color:var(--text-muted);line-height:1.7;margin-bottom:10px}
+.code-block{background:var(--navy);border:1px solid var(--navy-border);border-radius:var(--radius-sm);padding:12px;font-family:var(--font-mono);font-size:11px;color:var(--teal);overflow-x:auto;line-height:1.8;white-space:pre}
+.platform-card{background:var(--navy);border:1px solid var(--navy-border);border-radius:var(--radius-sm);padding:14px;display:flex;align-items:flex-start;gap:12px}
+.plat-icon{font-size:22px;flex-shrink:0;margin-top:2px}
+.plat-name{font-family:var(--font-display);font-size:13px;font-weight:600;color:var(--white);margin-bottom:3px}
+.plat-desc{font-size:12px;color:var(--text-muted);line-height:1.6}
+.plat-free{font-size:10px;font-weight:700;padding:2px 8px;border-radius:100px;background:var(--green-dim);color:var(--green);border:1px solid rgba(52,211,153,.3);display:inline-block;margin-top:6px;text-transform:uppercase;letter-spacing:.05em}
+
+/* EMPTY */
+.empty{text-align:center;padding:48px 24px;color:var(--text-muted)}
+.empty-icon{font-size:40px;margin-bottom:14px;opacity:.5}
+.empty-t{font-family:var(--font-display);font-size:16px;color:var(--white);margin-bottom:6px}
+
+/* PROFILE WIDGET */
+.pw{background:linear-gradient(135deg,var(--navy-card),#0D1A2E);border:1px solid var(--navy-border);border-radius:var(--radius);padding:16px}
+.pw-name{font-family:var(--font-display);font-size:14px;font-weight:600;color:var(--white);margin-bottom:2px}
+.pw-sub{font-size:11px;color:var(--text-muted);margin-bottom:12px}
+.pw-bar-w{height:4px;background:var(--navy);border-radius:100px;overflow:hidden}
+.pw-bar{height:100%;border-radius:100px;background:linear-gradient(90deg,var(--teal),#0099FF);width:60%}
+.success-check{width:56px;height:56px;background:var(--green-dim);border:2px solid var(--green);border-radius:50%;display:flex;align-items:center;justify-content:center;font-size:26px;margin:0 auto 16px}
+`;
+
+// ─── DATA ────────────────────────────────────────────────────────────────────
+const COUNTRIES = [
+  {code:"ch",name:"Switzerland",flag:"🇨🇭",count:47},
+  {code:"de",name:"Germany",flag:"🇩🇪",count:63},
+  {code:"ie",name:"Ireland",flag:"🇮🇪",count:29},
+  {code:"nl",name:"Netherlands",flag:"🇳🇱",count:38},
+  {code:"gb",name:"UK",flag:"🇬🇧",count:84},
+  {code:"ca",name:"Canada",flag:"🇨🇦",count:56},
+  {code:"au",name:"Australia",flag:"🇦🇺",count:41},
+  {code:"sg",name:"Singapore",flag:"🇸🇬",count:33},
+  {code:"ae",name:"UAE",flag:"🇦🇪",count:72},
+  {code:"sa",name:"Saudi Arabia",flag:"🇸🇦",count:28},
+  {code:"be",name:"Belgium",flag:"🇧🇪",count:21},
+  {code:"nz",name:"New Zealand",flag:"🇳🇿",count:15},
+];
+
+const JOBS = [
+  {id:1,title:"Pharmacovigilance Associate",company:"Roche",logo:"💊",country:"Switzerland",city:"Basel",countryCode:"ch",salaryLocal:"CHF 70,000–85,000",salaryINR:"₹66L–80L",visa:true,relocation:true,exp:"0–1 yr",degree:"B.Pharm / M.Pharm",deadline:"2025-08-30",type:"Regulatory & Safety",score:85,scoreLabel:"High",desc:"Join Roche's Drug Safety team to monitor adverse events for innovative oncology and rare disease therapies. No prior license required.",permit:"EU Blue Card eligible. Roche sponsors work permits for qualified candidates from India.",link:"https://careers.roche.com",tags:["Fresher OK","Visa Sponsored","Relocation Package"],ai:"Excellent match. Roche actively recruits B.Pharm graduates from Indian universities for their Basel PV team. Your Mumbai University degree is recognized. EudraVigilance training provided internally. High selection probability due to pharma talent shortage in Switzerland."},
+  {id:2,title:"Regulatory Affairs Associate",company:"Novartis",logo:"🔬",country:"Switzerland",city:"Basel",countryCode:"ch",salaryLocal:"CHF 72,000–90,000",salaryINR:"₹68L–85L",visa:true,relocation:true,exp:"0–2 yrs",degree:"B.Pharm",deadline:"2025-09-15",type:"Regulatory & Safety",score:82,scoreLabel:"High",desc:"Support global regulatory submissions for innovative medicines. Work with cross-functional teams on CTD dossiers and health authority queries.",permit:"CH work permit via sponsored transfer. Novartis Global Mobility handles full relocation.",link:"https://jobs.novartis.com",tags:["Visa Sponsored","Relocation Package","MNC"],ai:"Strong fit. Novartis has a dedicated emerging-talent program for Indian pharmacy graduates. The RA role doesn't require CH pharmacist registration. ICH guidelines knowledge from your curriculum directly applies."},
+  {id:3,title:"Drug Safety Associate",company:"AstraZeneca",logo:"🧬",country:"United Kingdom",city:"Cambridge",countryCode:"gb",salaryLocal:"£35,000–42,000",salaryINR:"₹37L–44L",visa:true,relocation:false,exp:"0–1 yr",degree:"B.Pharm / Pharmacy",deadline:"2025-07-30",type:"Regulatory & Safety",score:78,scoreLabel:"High",desc:"Process individual case safety reports (ICSRs) and support signal detection for AstraZeneca's global biologics portfolio.",permit:"UK Skilled Worker Visa sponsored. Salary well above minimum threshold.",link:"https://careers.astrazeneca.com",tags:["Visa Sponsored","Fresher OK","Global Team"],ai:"Good match. AZ Cambridge actively hires Indian pharmacy grads for drug safety roles. UK Skilled Worker Visa is straightforward for this salary band. No GPhC registration needed for this role."},
+  {id:4,title:"Clinical Trial Assistant",company:"IQVIA",logo:"📋",country:"Ireland",city:"Dublin",countryCode:"ie",salaryLocal:"€38,000–46,000",salaryINR:"₹34L–41L",visa:true,relocation:true,exp:"0 yrs (Fresher)",degree:"B.Pharm / Life Sciences",deadline:"2025-10-01",type:"Clinical Research",score:90,scoreLabel:"High",desc:"Coordinate clinical trial site activities, maintain essential documents, and support study coordinators across EU Phase II–III oncology trials.",permit:"Irish Critical Skills Employment Permit available. IQVIA has an Indian talent pipeline via their Hyderabad office.",link:"https://jobs.iqvia.com",tags:["Fresher Preferred","Visa Sponsored","Relocation Package","Entry Level"],ai:"Excellent match — highest probability job in this list. IQVIA Dublin specifically recruits fresh B.Pharm graduates from India. ICH-GCP certification will significantly boost your application."},
+  {id:5,title:"QA Associate – GMP Operations",company:"Pfizer",logo:"💉",country:"Germany",city:"Berlin",countryCode:"de",salaryLocal:"€45,000–55,000",salaryINR:"₹40L–49L",visa:true,relocation:true,exp:"0–1 yr",degree:"B.Pharm / Pharmacy",deadline:"2025-11-30",type:"Quality & Manufacturing",score:68,scoreLabel:"Medium",desc:"Support batch record review, deviation management, and GMP audits for Pfizer's Germany manufacturing site.",permit:"EU Blue Card (Germany). Pfizer sponsors skilled workers. German language courses offered on joining.",link:"https://careers.pfizer.com",tags:["Visa Sponsored","Language Support","MNC"],ai:"Medium match. The role is open to freshers but favors candidates with GMP knowledge. German B1 language skill would raise your selection probability significantly."},
+  {id:6,title:"Medical Information Associate",company:"Sanofi",logo:"🏥",country:"Netherlands",city:"Amsterdam",countryCode:"nl",salaryLocal:"€40,000–50,000",salaryINR:"₹36L–45L",visa:true,relocation:false,exp:"0–2 yrs",degree:"B.Pharm / Pharm.D",deadline:"2025-09-30",type:"Medical Affairs",score:72,scoreLabel:"Medium",desc:"Respond to healthcare professional inquiries, develop medical content, and support field medical teams.",permit:"Netherlands Highly Skilled Migrant Permit. Sanofi is a recognized sponsor.",link:"https://jobs.sanofi.com",tags:["Visa Sponsored","Scientific Writing","HCP Engagement"],ai:"Decent match. Sanofi Netherlands looks for strong medical knowledge and English communication. Your pharmacology training is directly relevant."},
+  {id:7,title:"Pharmacovigilance Specialist (Entry)",company:"Parexel",logo:"🔍",country:"Canada",city:"Toronto",countryCode:"ca",salaryLocal:"CAD 52,000–65,000",salaryINR:"₹31L–39L",visa:true,relocation:true,exp:"0–1 yr",degree:"B.Pharm",deadline:"2025-12-15",type:"Regulatory & Safety",score:80,scoreLabel:"High",desc:"Process ICSRs and support aggregate safety reporting for multiple pharma clients across oncology and rare disease programs.",permit:"Canada Express Entry / Employer-Specific Work Permit. Parexel is an LMIA-exempt employer.",link:"https://careers.parexel.com",tags:["Visa Sponsored","Relocation","CRO"],ai:"Strong match. Canada is one of the most accessible countries for Indian B.Pharm graduates. PV roles in Canada do not require Canadian pharmacist registration."},
+  {id:8,title:"Medical Affairs Associate",company:"Johnson & Johnson",logo:"❤️",country:"UAE",city:"Dubai",countryCode:"ae",salaryLocal:"AED 8,000–12,000/mo",salaryINR:"₹18L–27L/yr",visa:true,relocation:true,exp:"0–1 yr",degree:"B.Pharm",deadline:"2025-08-15",type:"Medical Affairs",score:74,scoreLabel:"Medium",desc:"Support medical education, HCP engagement, and key opinion leader activities across J&J's pharmaceutical and consumer health divisions in MENA.",permit:"UAE Employment Visa provided. No MOH license required for Medical Affairs roles (non-dispensing).",link:"https://jobs.jnj.com",tags:["Tax-Free Salary","Visa Provided","MENA Region"],ai:"Good stepping-stone opportunity. UAE does not require pharmacist registration for Medical Affairs roles. Tax-free salary stretches further. This role can serve as a 2–3 year launchpad before moving to Europe."},
+  {id:9,title:"Clinical Research Associate (Trainee)",company:"Syneos Health",logo:"🩺",country:"Australia",city:"Sydney",countryCode:"au",salaryLocal:"AUD 58,000–72,000",salaryINR:"₹30L–38L",visa:true,relocation:true,exp:"0 yrs (Graduate Program)",degree:"B.Pharm / Science",deadline:"2026-01-31",type:"Clinical Research",score:76,scoreLabel:"High",desc:"Two-year graduate development program rotating through oncology, CNS, and cardiovascular trial monitoring. Full GCP training provided.",permit:"TSS Visa subclass 482 sponsored. Syneos is an approved sponsor.",link:"https://careers.syneoshealth.com",tags:["Graduate Program","2-Year Rotation","Visa Sponsored","Full Training"],ai:"Excellent for 2026 graduation intake. Syneos Health Australia's Graduate CRA Program regularly recruits Indian pharmacy graduates. Apply in October 2026 — well-aligned with your May 2027 graduation."},
+  {id:10,title:"Supply Chain Associate – Pharma",company:"Thermo Fisher Scientific",logo:"🧪",country:"Singapore",city:"Singapore",countryCode:"sg",salaryLocal:"SGD 3,500–4,800/mo",salaryINR:"₹22L–30L/yr",visa:true,relocation:true,exp:"0–2 yrs",degree:"B.Pharm / Logistics",deadline:"2025-09-01",type:"Operations & Supply Chain",score:65,scoreLabel:"Medium",desc:"Coordinate pharmaceutical supply chain operations, cold chain management, and regulatory documentation for APAC clinical supplies.",permit:"EP (Employment Pass) sponsored by Thermo Fisher. Singapore is highly accessible for Indian professionals.",link:"https://jobs.thermofisher.com",tags:["Visa Sponsored","APAC Hub","Cold Chain"],ai:"Moderate match. Singapore is one of the easiest countries for Indian B.Pharm graduates to work in. The supply chain role doesn't require pharmacist registration."},
+];
+
+const JOB_TYPES = ["All Types","Regulatory & Safety","Clinical Research","Quality & Manufacturing","Medical Affairs","Operations & Supply Chain"];
+
+const INTERVIEW_QS = [
+  {id:1,cat:"pv",catLabel:"Pharmacovigilance",q:"What is an Adverse Drug Reaction (ADR) and how does it differ from a Side Effect?",a:"An ADR is any noxious, unintended response to a drug at normal doses used in humans for prophylaxis, diagnosis, or therapy. A side effect is a known, expected pharmacological effect that occurs at normal doses (e.g., drowsiness with antihistamines). The key distinction is that ADRs are unintended and potentially harmful, while side effects are expected and often predictable."},
+  {id:2,cat:"pv",catLabel:"Pharmacovigilance",q:"What is the MedDRA coding system? Why is it used in pharmacovigilance?",a:"MedDRA (Medical Dictionary for Regulatory Activities) is a standardized international medical terminology used to classify adverse events, medical history, and indications. It's used because it provides a consistent coding system across different languages and health authorities, enabling global pharmacovigilance databases (like EudraVigilance and FDA FAERS) to be searchable and comparable."},
+  {id:3,cat:"ra",catLabel:"Regulatory Affairs",q:"What is a Common Technical Document (CTD) and what are its modules?",a:"The CTD is a harmonized format for new drug applications accepted by ICH member regulatory authorities (FDA, EMA, PMDA). It has 5 modules: Module 1 (regional administrative information), Module 2 (quality/nonclinical/clinical summaries), Module 3 (quality/CMC), Module 4 (nonclinical study reports), Module 5 (clinical study reports). Modules 2–5 are globally harmonized."},
+  {id:4,cat:"sci",catLabel:"Pharmaceutical Sciences",q:"Explain the difference between pharmacokinetics and pharmacodynamics.",a:"Pharmacokinetics (PK) describes what the body does to the drug — absorption, distribution, metabolism, and excretion (ADME). Pharmacodynamics (PD) describes what the drug does to the body — its mechanism of action, receptor binding, and therapeutic/toxic effects. PK/PD modeling helps determine optimal dosing regimens."},
+  {id:5,cat:"gen",catLabel:"General/HR",q:"Why do you want to work in pharma in [target country] instead of India?",a:"Frame your answer around: (1) exposure to global clinical practices and regulatory frameworks like EMA/FDA, (2) access to cutting-edge research and innovative therapies not yet available in India, (3) professional development in a mature pharma ecosystem, and (4) long-term career growth with international experience that creates value upon return or continued abroad."},
+  {id:6,cat:"gen",catLabel:"General/HR",q:"How would you handle working in a multicultural team with language barriers?",a:"Emphasize adaptability, active listening, and leveraging written communication when verbal is challenging. Mention experience with diverse groups during college, willingness to learn basic phrases in the local language, and professional tools like clear documentation, visual aids, and structured emails to overcome gaps. Show cultural curiosity rather than avoidance."},
+  {id:7,cat:"pv",catLabel:"Pharmacovigilance",q:"What is the difference between a serious and non-serious adverse event?",a:"A serious adverse event (SAE) meets at least one of these criteria (SUSAR definition): death, life-threatening, requires hospitalization or prolonged hospitalization, results in persistent/significant disability, is a congenital anomaly, or is another medically important condition. Non-serious AEs are all other undesirable events. Serious AEs require expedited reporting to health authorities (15-day for unexpected SAEs)."},
+  {id:8,cat:"ra",catLabel:"Regulatory Affairs",q:"What is ICH Q10 and why is it important for pharmaceutical quality?",a:"ICH Q10 is a pharmaceutical quality system (PQS) model based on ISO quality concepts, combined with GMP regulations. It describes a comprehensive model for an effective pharmaceutical quality system covering the entire product lifecycle. Its importance: ensures consistent product quality, facilitates continuous improvement, strengthens company-authority relationships, and enables lifecycle management of drug products."},
+  {id:9,cat:"sci",catLabel:"Pharmaceutical Sciences",q:"What is the difference between innovator and generic drugs? What is bioequivalence?",a:"Innovator drugs are original branded products with new active ingredients that underwent full clinical trials. Generic drugs contain the same active ingredient, dosage form, and strength but are developed after patent expiry without full clinical programs. Bioequivalence means the generic delivers the same amount of active ingredient to the bloodstream in the same timeframe as the innovator, demonstrated via comparative PK studies (AUC, Cmax within 80–125% CI)."},
+  {id:10,cat:"gen",catLabel:"General/HR",q:"You're a fresher competing against candidates with experience. What's your edge?",a:"Your edge: (1) Up-to-date academic knowledge of current ICH guidelines and pharmacology, (2) fresh perspective without bad habits from previous roles, (3) energy and willingness to work hard and adapt, (4) technical skills from recent coursework (data analysis, lab techniques), and (5) direct alignment of your B.Pharm curriculum with the role requirements. Complement this by mentioning any certifications (GCP, RAPS) you're pursuing."},
+];
+
+const catStyle = {pv:"qc-pv",ra:"qc-ra",gen:"qc-gen",sci:"qc-sci"};
+
+// ─── HELPERS ─────────────────────────────────────────────────────────────────
+const scoreClass = (s) => s>=75?"high":s>=55?"medium":"low";
+const isDeadlineSoon = (d) => { const diff=(new Date(d)-new Date())/86400000; return diff<30&&diff>0; };
+
+// ─── RESUME COMPONENT ────────────────────────────────────────────────────────
+function ResumePreview({info}) {
+  return (
+    <div className="resume-wrap">
+      <div className="r-name">{info.name||"Your Full Name"}</div>
+      <div className="r-contact">
+        {info.email||"email@example.com"} | {info.phone||"+91 XXXXX XXXXX"} | {info.linkedin||"linkedin.com/in/yourname"}<br/>
+        {info.city||"Mumbai"}, India | Open to Relocation
+      </div>
+      <hr className="r-divider"/>
+
+      <div className="r-section-title">Professional Summary</div>
+      <div style={{fontSize:12,color:"#333",lineHeight:1.7,marginBottom:8}}>
+        {info.summary||`Dedicated B.Pharm graduate from Mumbai University with strong foundation in pharmacology, drug regulatory affairs, and pharmaceutical sciences. Seeking entry-level positions in pharmacovigilance, regulatory affairs, or clinical research with multinational pharmaceutical companies. ICH GCP certified. Passionate about drug safety and patient outcomes.`}
+      </div>
+
+      <div className="r-section-title">Education</div>
+      <div className="r-item">
+        <div className="r-item-header">
+          <div className="r-item-title">Bachelor of Pharmacy (B.Pharm)</div>
+          <div className="r-item-date">Expected May 2027</div>
+        </div>
+        <div className="r-item-sub">{info.university||"Mumbai University, Mumbai, Maharashtra, India"}</div>
+        <div className="r-bullet">• CGPA: {info.cgpa||"Enter your CGPA"}/10</div>
+        <div className="r-bullet">• Relevant coursework: Pharmacology, Pharmaceutical Chemistry, Drug Regulatory Affairs, Biopharmaceutics, Clinical Pharmacy</div>
+      </div>
+
+      <div className="r-section-title">Certifications & Training</div>
+      {(info.certs||["ICH E6 R2 GCP Training (TransCelerate)","RAPS Regulatory Affairs Fundamentals","DIA Pharmacovigilance Basics"]).map((c,i)=>(
+        <div key={i} className="r-bullet">• {c}</div>
+      ))}
+
+      <div className="r-section-title">Key Projects</div>
+      <div className="r-item">
+        <div className="r-item-header">
+          <div className="r-item-title">{info.project1Title||"Drug Safety Signal Detection Study"}</div>
+          <div className="r-item-date">2024</div>
+        </div>
+        <div className="r-item-sub">Final Year Research Project — Mumbai University</div>
+        <div className="r-bullet">• {info.project1Desc||"Analyzed 500+ spontaneous adverse event reports using WHO-UMC signal detection methodology"}</div>
+        <div className="r-bullet">• Applied MedDRA coding and WHO-ART terminology to classify adverse drug reactions</div>
+      </div>
+      <div className="r-item">
+        <div className="r-item-header">
+          <div className="r-item-title">{info.project2Title||"Regulatory Dossier Preparation (Academic Exercise)"}</div>
+          <div className="r-item-date">2023</div>
+        </div>
+        <div className="r-bullet">• Prepared a mock CTD Module 2 Quality Summary for a generic drug submission</div>
+        <div className="r-bullet">• Reviewed EMA and FDA guidances for regulatory pathway selection</div>
+      </div>
+
+      <div className="r-section-title">Technical Skills</div>
+      <div className="r-skills-grid">
+        {["ICH Guidelines (E6, Q8-Q10)","GCP / GMP / GDP Principles","MedDRA / WHO-ART Coding","CTD / eCTD Structure","Pharmacovigilance (EMA/FDA)","Microsoft Office Suite","Basic Python / R (Data Analysis)","Clinical Trial Phases (I–IV)"].map((s,i)=>(
+          <div key={i} className="r-skill-item">• {s}</div>
+        ))}
+      </div>
+
+      <div className="r-section-title">Languages</div>
+      <div className="r-bullet">• English — Fluent (Professional proficiency)</div>
+      <div className="r-bullet">• Hindi — Native</div>
+      <div className="r-bullet">• Marathi — Native</div>
+      {info.lang4&&<div className="r-bullet">• {info.lang4}</div>}
+
+      <div className="r-section-title">Additional Information</div>
+      <div className="r-bullet">• Open to relocation globally — no geographic restrictions</div>
+      <div className="r-bullet">• Actively pursuing certifications in Regulatory Affairs and Pharmacovigilance</div>
+      <div className="r-bullet">• Member of Indian Pharmaceutical Association (IPA), Student Chapter</div>
+    </div>
+  );
+}
+
+// ─── MAIN APP ────────────────────────────────────────────────────────────────
+export default function PharmaGlobalJobs() {
+  const [tab, setTab] = useState("jobs");
+  const [selectedJob, setSelectedJob] = useState(null);
+  const [savedJobs, setSavedJobs] = useState(new Set([1,4]));
+  const [activeCountry, setActiveCountry] = useState(null);
+  const [activeType, setActiveType] = useState("All Types");
+  const [visaFilter, setVisaFilter] = useState(false);
+  const [fresherFilter, setFresherFilter] = useState(true);
+  const [searchQ, setSearchQ] = useState("");
+  const [sortBy, setSortBy] = useState("relevance");
+  const [showNotif, setShowNotif] = useState(true);
+
+  // Apply modal states
+  const [applyModal, setApplyModal] = useState(null); // job being applied to
+  const [applyStep, setApplyStep] = useState(1);
+  const [applyForm, setApplyForm] = useState({name:"",email:"",phone:"",linkedin:"",why:"",available:""});
+  const [appTracker, setAppTracker] = useState({1:"Applied",4:"Shortlisted"});
+  const [applySuccess, setApplySuccess] = useState(false);
+
+  // Resume states
+  const [resumeInfo, setResumeInfo] = useState({name:"",email:"",phone:"",linkedin:"",city:"",university:"Mumbai University",cgpa:"",summary:"",project1Title:"",project1Desc:"",project2Title:"",lang4:"",certs:["ICH E6 R2 GCP Training","RAPS Regulatory Affairs Fundamentals","DIA Pharmacovigilance Certificate"]});
+  const [newCert, setNewCert] = useState("");
+
+  // AI states
+  const [aiQuery, setAiQuery] = useState("");
+  const [aiResponse, setAiResponse] = useState("");
+  const [aiLoading, setAiLoading] = useState(false);
+  const [aiCoverLetter, setAiCoverLetter] = useState("");
+  const [coverLoading, setCoverLoading] = useState(false);
+
+  // Interview states
+  const [expandedQ, setExpandedQ] = useState(null);
+  const [interviewAiQ, setInterviewAiQ] = useState("");
+  const [interviewAiR, setInterviewAiR] = useState("");
+  const [interviewLoading, setInterviewLoading] = useState(false);
+
+  const filteredJobs = JOBS.filter(j => {
+    if(activeCountry && j.countryCode!==activeCountry) return false;
+    if(activeType!=="All Types" && j.type!==activeType) return false;
+    if(visaFilter && !j.visa) return false;
+    if(fresherFilter && j.exp.includes("2+")) return false;
+    if(searchQ && !j.title.toLowerCase().includes(searchQ.toLowerCase()) && !j.company.toLowerCase().includes(searchQ.toLowerCase()) && !j.country.toLowerCase().includes(searchQ.toLowerCase())) return false;
+    return true;
+  }).sort((a,b) => sortBy==="deadline" ? new Date(a.deadline)-new Date(b.deadline) : b.score-a.score);
+
+  const toggleSave = (id,e) => {
+    e.stopPropagation();
+    setSavedJobs(prev => { const n=new Set(prev); n.has(id)?n.delete(id):n.add(id); return n; });
+  };
+
+  const startApply = (job,e) => {
+    e.stopPropagation();
+    setApplyModal(job);
+    setApplyStep(1);
+    setApplySuccess(false);
+    setAiCoverLetter("");
+    setApplyForm({name:"",email:"",phone:"",linkedin:"",why:"",available:""});
+  };
+
+  const submitApply = () => {
+    setAppTracker(prev => ({...prev, [applyModal.id]:"Applied"}));
+    setApplySuccess(true);
+    setApplyStep(4);
+  };
+
+  const callAI = useCallback(async (query, setter, loadSetter, systemPrompt) => {
+    if(!query.trim()) return;
+    loadSetter(true);
+    setter("");
+    try {
+      const res = await fetch("https://api.anthropic.com/v1/messages", {
+        method:"POST",
+        headers:{"Content-Type":"application/json"},
+        body: JSON.stringify({
+          model:"claude-sonnet-4-6",
+          max_tokens:1000,
+          system: systemPrompt,
+          messages:[{role:"user",content:query}]
+        })
+      });
+      const data = await res.json();
+      const text = data.content?.map(b=>b.text||"").join("") || "Unable to get response. Please try again.";
+      setter(text);
+    } catch {
+      setter("⚠️ AI temporarily unavailable. Please try again.");
+    }
+    loadSetter(false);
+  }, []);
+
+  const genCoverLetter = async (job) => {
+    const prompt = `Write a professional, concise cover letter (max 280 words) for a B.Pharm student from Mumbai University (graduating May 2027) applying for the role of "${job.title}" at "${job.company}" in ${job.city}, ${job.country}. The candidate is a fresher, open to relocation, passionate about pharmaceutical sciences, has no pharmacist license in that country (not required for this role), and has strong pharmacology and drug regulatory knowledge. Make it genuine, specific to the company and role, and end with a confident call to action. Format as a proper letter without placeholders.`;
+    setCoverLoading(true);
+    setAiCoverLetter("");
+    try {
+      const res = await fetch("https://api.anthropic.com/v1/messages", {
+        method:"POST",
+        headers:{"Content-Type":"application/json"},
+        body: JSON.stringify({model:"claude-sonnet-4-6",max_tokens:1000,messages:[{role:"user",content:prompt}]})
+      });
+      const data = await res.json();
+      setAiCoverLetter(data.content?.map(b=>b.text||"").join("")||"Could not generate cover letter.");
+    } catch { setAiCoverLetter("⚠️ Error generating cover letter."); }
+    setCoverLoading(false);
+  };
+
+  const apSteps = ["Your Info","Cover Letter","Review & Submit","Confirmation"];
+
+  // ── RENDER ──────────────────────────────────────────────────────────────────
+  return (
+    <>
+      <style>{STYLE}</style>
+
+      {/* HEADER */}
+      <header className="hdr">
+        <div className="hdr-in">
+          <div className="logo" onClick={()=>setTab("jobs")}>
+            <div className="logo-icon">💊</div>
+            <span className="logo-txt">Pharma<span>Global</span>Jobs</span>
+          </div>
+          <nav className="nav">
+            {[["jobs","🔍 Jobs"],["tracker","📊 Tracker"],["resume","📄 Resume"],["interview","🎤 Interview"],["ai","🤖 AI Advisor"],["deploy","🚀 Go Live"]].map(([k,v])=>(
+              <button key={k} className={`nb${tab===k?" act":""}`} onClick={()=>setTab(k)}>{v}</button>
+            ))}
+          </nav>
+          <div style={{display:"flex",gap:8,flexShrink:0}}>
+            <button className="btn btn-ghost">🔔</button>
+            <button className="btn btn-primary">Upload CV</button>
+          </div>
+        </div>
+      </header>
+
+      {/* ══ JOBS TAB ══ */}
+      {tab==="jobs" && <>
+        <section className="hero">
+          <div className="hero-in">
+            <div className="eyebrow"><span className="pdot"/>Live — {JOBS.length} jobs updated today</div>
+            <h1 className="hero-title">Your global pharma career<br/>starts <span className="ac">here.</span></h1>
+            <p className="hero-sub">Curated international pharmaceutical jobs for Indian B.Pharm freshers. No local license required. Visa sponsorship prioritized.</p>
+            <div className="stats">
+              <div><div className="stat-v">247<span className="u">+</span></div><div className="stat-l">Active Jobs</div></div>
+              <div className="sdiv"/>
+              <div><div className="stat-v">17</div><div className="stat-l">Countries</div></div>
+              <div className="sdiv"/>
+              <div><div className="stat-v">89<span className="u">%</span></div><div className="stat-l">Visa Sponsored</div></div>
+              <div className="sdiv"/>
+              <div><div className="stat-v">20</div><div className="stat-l">MNC Partners</div></div>
+            </div>
+            <div className="srch">
+              <span style={{color:"var(--text-muted)",padding:"0 8px",fontSize:17}}>🔍</span>
+              <input className="srch-inp" placeholder="Search jobs, companies, roles…" value={searchQ} onChange={e=>setSearchQ(e.target.value)}/>
+              <span className="sdivv"/>
+              <select className="csel" onChange={e=>setActiveCountry(e.target.value||null)}>
+                <option value="">All Countries</option>
+                {COUNTRIES.map(c=><option key={c.code} value={c.code}>{c.flag} {c.name}</option>)}
+              </select>
+              <button className="btn btn-primary">Search</button>
+            </div>
+          </div>
+        </section>
+
+        <div className="layout">
+          {/* Sidebar */}
+          <aside className="sidebar">
+            <div className="pw">
+              <div className="pw-name">B.Pharm Student</div>
+              <div className="pw-sub">Mumbai University · Graduating May 2027</div>
+              <div style={{fontSize:11,color:"var(--text-muted)",marginBottom:5,display:"flex",justifyContent:"space-between"}}>
+                <span>Profile completeness</span><span style={{color:"var(--teal)"}}>60%</span>
+              </div>
+              <div className="pw-bar-w"><div className="pw-bar"/></div>
+            </div>
+            <div className="fc">
+              <div className="ft">Filters <button className="freset" onClick={()=>{setActiveCountry(null);setActiveType("All Types");setVisaFilter(false);setFresherFilter(false);}}>Reset</button></div>
+              <div>
+                {[["✈️ Visa Sponsored Only",visaFilter,setVisaFilter],["🌱 Fresher Roles Only",fresherFilter,setFresherFilter],["🏢 MNC Companies Only",false,()=>{}],["📦 Relocation Support",false,()=>{}]].map(([l,v,s])=>(
+                  <div key={l} className="trow"><span className="tlbl">{l}</span><button className={`tog${v?" on":""}`} onClick={()=>s(!v)}/></div>
+                ))}
+              </div>
+            </div>
+            <div className="fc">
+              <div className="ft">Job Type</div>
+              <div className="chips">
+                {JOB_TYPES.map(t=><button key={t} className={`chip${activeType===t?" act":""}`} onClick={()=>setActiveType(t)}>{t==="All Types"?"All":t.split(" ")[0]}</button>)}
+              </div>
+            </div>
+            <div className="fc">
+              <div className="ft">Match Score</div>
+              <div className="chips">
+                {["High (75%+)","Medium (55–74%)","Low (<55%)"].map(s=><button key={s} className="chip">{s}</button>)}
+              </div>
+            </div>
+          </aside>
+
+          {/* Main */}
+          <main>
+            {showNotif && (
+              <div className="notif">
+                <span className="notif-t">🎯 <strong>3 new jobs</strong> matching your B.Pharm profile added today. Roche Basel deadline in 12 days.</span>
+                <button className="ndism" onClick={()=>setShowNotif(false)}>×</button>
+              </div>
+            )}
+
+            <div className="sh"><span className="st">Browse by Country</span></div>
+            <div className="cg">
+              {COUNTRIES.slice(0,8).map(c=>(
+                <div key={c.code} className={`ccard${activeCountry===c.code?" act":""}`} onClick={()=>setActiveCountry(activeCountry===c.code?null:c.code)}>
+                  <div className="cflag">{c.flag}</div>
+                  <div className="cname-t">{c.name}</div>
+                  <div className="ccnt">{c.count} jobs</div>
+                </div>
+              ))}
+            </div>
+
+            <div className="tab-bar">
+              {[["all","All Jobs",filteredJobs.length],["high","High Match",filteredJobs.filter(j=>j.score>=75).length],["visa","Visa Sponsored",filteredJobs.filter(j=>j.visa).length],["saved","Saved",savedJobs.size],["applied","Applied",Object.keys(appTracker).length]].map(([k,l,c])=>(
+                <button key={k} className={`tab${k==="all"?" act":""}`}>{l} <span className="tcnt">{c}</span></button>
+              ))}
+            </div>
+
+            <div className="toolbar">
+              <div className="rmeta">Showing <strong>{filteredJobs.length}</strong> of <strong>{JOBS.length}</strong> jobs</div>
+              <div style={{display:"flex",alignItems:"center",gap:7}}>
+                <span style={{fontSize:12,color:"var(--text-muted)"}}>Sort:</span>
+                <select className="sortsel" value={sortBy} onChange={e=>setSortBy(e.target.value)}>
+                  <option value="relevance">Best Match</option>
+                  <option value="deadline">Deadline</option>
+                </select>
+              </div>
+            </div>
+
+            <div className="jobs-grid">
+              {filteredJobs.length===0 ? (
+                <div className="empty"><div className="empty-icon">🔭</div><div className="empty-t">No jobs found</div><p>Try adjusting your filters</p></div>
+              ) : filteredJobs.map(job=>(
+                <div key={job.id} className="jcard" onClick={()=>setSelectedJob(job)}>
+                  <div className="jcard-top">
+                    <div className="clogo">{job.logo}</div>
+                    <div style={{flex:1,minWidth:0}}>
+                      <div className="jtitle">{job.title}</div>
+                      <div className="cname">{job.company}</div>
+                    </div>
+                    <div style={{display:"flex",gap:6,flexShrink:0}}>
+                      <button className={`svbtn${savedJobs.has(job.id)?" saved":""}`} onClick={e=>toggleSave(job.id,e)}>{savedJobs.has(job.id)?"★":"☆"}</button>
+                      <button className="btn btn-primary" style={{fontSize:12,padding:"5px 12px"}} onClick={e=>startApply(job,e)}>Apply →</button>
+                    </div>
+                  </div>
+                  <div className="jmeta">
+                    <span className="mpill">📍 {job.city}, {job.country}</span>
+                    <span className="mpill">🎓 {job.exp}</span>
+                    <span className={`vbadge ${job.visa?"vyes":"vno"}`}>{job.visa?"✓ Visa Sponsored":"✗ No Visa"}</span>
+                    {job.relocation&&<span className="vbadge" style={{background:"var(--sky-dim)",border:"1px solid rgba(96,165,250,.3)",color:"var(--sky)"}}>📦 Relocation</span>}
+                  </div>
+                  <div className="jsal">
+                    <span className="sal-m">{job.salaryLocal}</span>
+                    <span className="sal-i">{job.salaryINR}</span>
+                  </div>
+                  <p className="jdesc">{job.desc}</p>
+                  <div className="jfoot">
+                    <div style={{display:"flex",alignItems:"center",gap:7}}>
+                      <span style={{fontSize:11,color:"var(--text-muted)"}}>Match:</span>
+                      <div className="sbar-w"><div className={`sbar ${scoreClass(job.score)}`} style={{width:`${job.score}%`}}/></div>
+                      <span className={`stxt ${scoreClass(job.score)}`} style={{fontSize:11,fontFamily:"var(--font-mono)",fontWeight:700}}>{job.scoreLabel}</span>
+                    </div>
+                    <div style={{display:"flex",gap:6,alignItems:"center"}}>
+                      {appTracker[job.id]&&<span className="dpill" style={{color:"var(--teal)",borderColor:"rgba(0,212,170,.3)",background:"var(--teal-glow)"}}>✓ {appTracker[job.id]}</span>}
+                      <span className={`dpill${isDeadlineSoon(job.deadline)?" soon":""}`}>{isDeadlineSoon(job.deadline)?"⚡ ":"📅 "}Due {new Date(job.deadline).toLocaleDateString("en-GB",{day:"2-digit",month:"short"})}</span>
+                    </div>
+                  </div>
+                </div>
+              ))}
+            </div>
+          </main>
+        </div>
+      </>}
+
+      {/* ══ TRACKER TAB ══ */}
+      {tab==="tracker" && (
+        <div style={{maxWidth:1100,margin:"0 auto",padding:"28px 20px"}}>
+          <div className="sh"><span className="st">Application Tracker</span><button className="btn btn-primary btn-sm" style={{fontSize:12}} onClick={()=>setTab("jobs")}>+ Browse Jobs</button></div>
+          <div className="tgrid">
+            {[["Saved","★",savedJobs.size,"var(--amber)"],["Applied","📤",Object.values(appTracker).filter(s=>s==="Applied").length,"var(--sky)"],["Shortlisted","⚡",Object.values(appTracker).filter(s=>s==="Shortlisted").length,"var(--teal)"],["Rejected","✗",0,"var(--rose)"]].map(([l,i,c,col])=>(
+              <div key={l} className="tcard"><div className="tcval" style={{color:col}}>{i} {c}</div><div className="tclbl">{l}</div></div>
+            ))}
+          </div>
+          <div className="jobs-grid">
+            {JOBS.filter(j=>savedJobs.has(j.id)||appTracker[j.id]).map(job=>(
+              <div key={job.id} className="jcard" style={{cursor:"default"}}>
+                <div className="jcard-top">
+                  <div className="clogo">{job.logo}</div>
+                  <div style={{flex:1}}>
+                    <div className="jtitle">{job.title}</div>
+                    <div className="cname">{job.company} · {job.city}, {job.country}</div>
+                  </div>
+                  <div style={{display:"flex",gap:6,alignItems:"center"}}>
+                    {appTracker[job.id]
+                      ? <span className="dpill" style={{color:"var(--teal)",borderColor:"rgba(0,212,170,.3)",background:"var(--teal-glow)"}}>✓ {appTracker[job.id]}</span>
+                      : <span className="dpill">★ Saved</span>}
+                    {!appTracker[job.id]&&<button className="btn btn-primary" style={{fontSize:12,padding:"5px 12px"}} onClick={e=>startApply(job,e)}>Apply →</button>}
+                  </div>
+                </div>
+                <div className="jmeta">
+                  <span className="mpill">📅 Deadline: {new Date(job.deadline).toLocaleDateString("en-GB",{day:"2-digit",month:"short",year:"2-digit"})}</span>
+                  <span className={`vbadge ${job.visa?"vyes":"vno"}`}>{job.visa?"✓ Visa Sponsored":"No Sponsorship"}</span>
+                </div>
+                <div className="jsal"><span className="sal-m">{job.salaryLocal}</span><span className="sal-i">{job.salaryINR}</span></div>
+              </div>
+            ))}
+            {savedJobs.size===0&&Object.keys(appTracker).length===0&&(
+              <div className="empty"><div className="empty-icon">📋</div><div className="empty-t">No applications yet</div><button className="btn btn-primary" onClick={()=>setTab("jobs")}>Browse Jobs</button></div>
+            )}
+          </div>
+        </div>
+      )}
+
+      {/* ══ RESUME TAB ══ */}
+      {tab==="resume" && (
+        <div style={{maxWidth:1300,margin:"0 auto",padding:"28px 20px"}}>
+          <div className="sh">
+            <div>
+              <span className="st">Resume Builder <span className="badge-new">AI</span></span>
+              <div style={{fontSize:12,color:"var(--text-muted)",marginTop:3}}>Fill in your details on the left — your resume updates live on the right</div>
+            </div>
+            <button className="btn btn-primary" onClick={()=>{const w=window.open("","_blank");w.document.write(`<html><head><title>Resume</title><style>body{margin:32px;font-family:Georgia,serif;color:#111}h1{color:#0A2540;text-align:center}.section{font-weight:700;color:#0A2540;text-transform:uppercase;font-size:12px;letter-spacing:.1em;border-top:2px solid #0A2540;padding-top:8px;margin-top:16px}</style></head><body><h1>${resumeInfo.name||"Your Name"}</h1><p style="text-align:center;font-size:12px;color:#555">${resumeInfo.email||""} | ${resumeInfo.phone||""} | ${resumeInfo.linkedin||""}</p></body></html>`);w.document.close();alert("Resume opened in new tab. Use Ctrl+P / Cmd+P to save as PDF!");}}>⬇️ Save as PDF</button>
+          </div>
+          <div className="resume-editor">
+            {/* Editor */}
+            <div style={{display:"flex",flexDirection:"column",gap:14}}>
+              <div className="fc">
+                <div className="ft">Personal Information</div>
+                <label className="flbl">Full Name</label>
+                <input className="finput" placeholder="e.g. Priya Sharma" value={resumeInfo.name} onChange={e=>setResumeInfo(p=>({...p,name:e.target.value}))}/>
+                <div className="frow">
+                  <div className="fgroup"><label className="flbl">Email</label><input className="finput" placeholder="your@email.com" value={resumeInfo.email} onChange={e=>setResumeInfo(p=>({...p,email:e.target.value}))}/></div>
+                  <div className="fgroup"><label className="flbl">Phone</label><input className="finput" placeholder="+91 98765 43210" value={resumeInfo.phone} onChange={e=>setResumeInfo(p=>({...p,phone:e.target.value}))}/></div>
+                </div>
+                <label className="flbl">LinkedIn URL</label>
+                <input className="finput" placeholder="li
